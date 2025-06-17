@@ -1,0 +1,19 @@
+.form-table {
+    width: 90vw; 
+    margin: 5px;
+    flex-wrap: wrap;
+}
+
+.table-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 80vh;
+    width: 100%;
+  }
+  
+.table-project {
+    width: 100%;
+    table-layout: auto;
+    min-width: 1500px;
+    white-space: nowrap;
+}

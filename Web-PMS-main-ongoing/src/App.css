@@ -1,0 +1,126 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.custom-header {
+  background-color: #0f0f56;
+}
+
+.custom-input {
+  display: none;
+}
+
+.toggle {
+  cursor: pointer;
+}
+
+.toggle .common {
+  display: block;
+  width: 30px;
+  height: 3px;
+  margin: 5px auto;
+  transition: all 0.3s ease-in-out;
+}
+
+.slide {
+  display: none;
+}
+
+.custom-input:checked ~ .slide {
+  display: block;
+}
+
+.custom-li {
+  list-style: none;
+  margin: 10px 0;
+}
+
+.containerlogin {
+  background-image: url('./pages/TDI3.jpg');
+  background-size: cover;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: rgba(250, 249, 250, 0.7);;
+}
+
+.login-card .form-control {
+  border-radius: 10px;
+  color: black;
+  width: 290px;
+}
+
+.login-card .btn {
+  border-radius: 10px;
+}
+
+.logo {
+  width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.forgot-button {
+  color: #007bff;
+  cursor: pointer;
+  border-radius: 0%;
+  outline: none;
+  font-weight: 500;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.submit-button {
+  color: white;
+  background-color: #007bff;
+  /* align-items: center; */
+}
+
+.form-group {
+  width: 100%;
+}
+

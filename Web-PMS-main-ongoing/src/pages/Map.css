@@ -1,0 +1,10 @@
+.container-map {
+    height: 100vh;
+    width: 100%;
+    position: fixed;
+}
+  
+.map {
+    height: 100%;
+    width: 100%;
+}

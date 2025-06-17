@@ -1,0 +1,75 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: auto;
+}
+
+@media (min-width: 1200px) {
+  html, body {
+    overflow: hidden;
+  }
+}
+
+.Homepage {
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+  padding-left: 0;
+  height: 100vh;
+}
+
+.card-container-top {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  max-height: 500px;
+}
+
+.card-container-bottom {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  margin-bottom: 50px;
+  max-height: 400px;
+}
+
+.card-one {
+  flex: 1;
+  max-width: 880px;
+}
+
+.card-two, .card-three {
+  flex: 1;
+  max-width: 200px;
+}
+
+.card-five {
+  flex: 1;
+  max-width: 680px;
+}
+
+.card-six {
+  flex: 1;
+  max-width: 400px;
+}
+
+.card-seven {
+  flex: 1;
+  max-width: 500px;
+}
+
+.card-body {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center; 
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
