@@ -1,3 +1,4 @@
+import loadImage from "blueimp-load-image";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap/dist/js/bootstrap.bundle.min";
@@ -44,18 +45,18 @@ function Checklistdb() {
   const [sortOrder, setSortOrder] = useState("default");
 
   // Tambahkan fungsi ini di bagian atas komponen, sebelum fungsi utama
-const formatDate = (dateString) => {
-  if (!dateString || dateString === "-") return "-";
-  
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "-";
-  
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  
-  return `${day}/${month}/${year}`;
-};
+  const formatDate = (dateString) => {
+    if (!dateString || dateString === "-") return "-";
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-";
+
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
 
   // function to handle filtering and sorting
   const applyFiltersAndSorting = () => {
@@ -88,27 +89,39 @@ const formatDate = (dateString) => {
     }
 
     // Apply sorting
-if (sortOrder !== "default") {
-  filtered.sort((a, b) => {
-    let comparison = 0;
+    if (sortOrder !== "default") {
+      filtered.sort((a, b) => {
+        let comparison = 0;
 
-    if (filterColumn === "project code") {
-      comparison = a.code.localeCompare(b.code);
-    } else if (filterColumn === "check out date") {
-      // Ubah cara membandingkan tanggal
-      const dateA = a.outTimestamp === "-" ? "0" : a.outTimestamp.split('/').reverse().join('');
-      const dateB = b.outTimestamp === "-" ? "0" : b.outTimestamp.split('/').reverse().join('');
-      comparison = dateA.localeCompare(dateB);
-    } else if (filterColumn === "check in date") {
-      // Ubah cara membandingkan tanggal
-      const dateA = a.inTimestamp === "-" ? "0" : a.inTimestamp.split('/').reverse().join('');
-      const dateB = b.inTimestamp === "-" ? "0" : b.inTimestamp.split('/').reverse().join('');
-      comparison = dateA.localeCompare(dateB);
+        if (filterColumn === "project code") {
+          comparison = a.code.localeCompare(b.code);
+        } else if (filterColumn === "check out date") {
+          // Ubah cara membandingkan tanggal
+          const dateA =
+            a.outTimestamp === "-"
+              ? "0"
+              : a.outTimestamp.split("/").reverse().join("");
+          const dateB =
+            b.outTimestamp === "-"
+              ? "0"
+              : b.outTimestamp.split("/").reverse().join("");
+          comparison = dateA.localeCompare(dateB);
+        } else if (filterColumn === "check in date") {
+          // Ubah cara membandingkan tanggal
+          const dateA =
+            a.inTimestamp === "-"
+              ? "0"
+              : a.inTimestamp.split("/").reverse().join("");
+          const dateB =
+            b.inTimestamp === "-"
+              ? "0"
+              : b.inTimestamp.split("/").reverse().join("");
+          comparison = dateA.localeCompare(dateB);
+        }
+
+        return sortOrder === "ascending" ? comparison : -comparison;
+      });
     }
-
-    return sortOrder === "ascending" ? comparison : -comparison;
-  });
-}
 
     return filtered;
   };
@@ -294,7 +307,7 @@ if (sortOrder !== "default") {
 
       const addImages = async (imageUrls) => {
         const maxImageWidth = 180;
-        const imageHeight = 120;
+        const imageHeight = 180;
         const imagesPerRow = Math.min(
           2,
           Math.floor(contentWidth / (maxImageWidth + 20))
@@ -306,34 +319,29 @@ if (sortOrder !== "default") {
             yPosition = i === 0 ? yPosition : margin + 20;
           }
           try {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.src = imageUrls[i];
+            // Ambil file gambar dari URL (atau File dari input)
+            const response = await fetch(imageUrls[i]);
+            const blob = await response.blob();
+
             await new Promise((resolve) => {
-              img.onload = resolve;
-              img.onerror = resolve;
-            });
-            if (img.complete && img.naturalWidth !== 0) {
-              const aspectRatio = img.naturalWidth / img.naturalHeight;
-              let renderWidth = maxImageWidth;
-              let renderHeight = imageHeight;
-              if (aspectRatio > 1) {
-                renderHeight = maxImageWidth / aspectRatio;
-              } else {
-                renderWidth = imageHeight * aspectRatio;
-              }
-              const xPos = margin + (i % imagesPerRow) * (maxImageWidth + 30);
-              doc.addImage(
-                img,
-                "JPEG",
-                xPos,
-                yPosition,
-                renderWidth,
-                renderHeight,
-                undefined,
-                "FAST"
+              loadImage(
+                blob,
+                function (canvas) {
+                  const imgData = canvas.toDataURL("image/jpeg");
+                  // Tambahkan ke PDF dengan orientasi yang sudah benar
+                  doc.addImage(
+                    imgData,
+                    "JPEG",
+                    margin + (i % imagesPerRow) * (maxImageWidth + 30),
+                    yPosition,
+                    maxImageWidth,
+                    imageHeight
+                  );
+                  resolve();
+                },
+                { orientation: true, canvas: true }
               );
-            }
+            });
           } catch (error) {
             console.error("Error adding image:", error);
           }
@@ -343,52 +351,52 @@ if (sortOrder !== "default") {
         }
       };
 
-        // 1. UAV Data
-    if (outModalData?.equipmentChecklists?.length > 0) {
-      addSectionHeader("UAV Checklist");
+      // 1. UAV Data
+      if (outModalData?.equipmentChecklists?.length > 0) {
+        addSectionHeader("UAV Checklist");
 
-      // Render semua tabel UAV
-      outModalData.equipmentChecklists.forEach((equipment, eqIndex) => {
-        addNewPageIfNeeded(80);
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont(undefined, "bold");
-        doc.text(`${equipment.equipmentType}`, margin, yPosition);
-        doc.setFont(undefined, "normal");
-        doc.text(
-          `Checked on: ${equipment.timestamp}`,
-          margin,
-          yPosition + 20
-        );
-        yPosition += 40;
-        const headers = [
-          { text: "Category", key: "category", width: 120 },
-          { text: "Item", key: "item", width: 250 },
-          { text: "Status", key: "status", width: 80 },
-          { text: "Notes", key: "notes", width: 150 },
+        // Render semua tabel UAV
+        outModalData.equipmentChecklists.forEach((equipment, eqIndex) => {
+          addNewPageIfNeeded(80);
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, "bold");
+          doc.text(`${equipment.equipmentType}`, margin, yPosition);
+          doc.setFont(undefined, "normal");
+          doc.text(
+            `Checked on: ${equipment.timestamp}`,
+            margin,
+            yPosition + 20
+          );
+          yPosition += 40;
+          const headers = [
+            { text: "Category", key: "category", width: 120 },
+            { text: "Item", key: "item", width: 250 },
+            { text: "Status", key: "status", width: 80 },
+            { text: "Notes", key: "notes", width: 150 },
+          ];
+          const rows = equipment.items.map((item) => ({
+            category: item.category,
+            item: item.name,
+            status: item.checked ? "checked" : "unchecked",
+            notes: item.notes || "-",
+          }));
+          addTable(headers, rows, { rowHeight: 30 });
+        });
+
+        // === Tambahkan overall notes di bawah semua tabel UAV ===
+        const notesArr = outModalData.equipmentChecklists
+          .map((eq) => eq.notes)
+          .filter(Boolean);
+
+        const overallNotes = notesArr.length > 0 ? notesArr[0] : "-";
+
+        const overallNotesHeaders = [
+          { text: "Overall Notes", key: "overallNotes", width: 600 },
         ];
-        const rows = equipment.items.map((item) => ({
-          category: item.category,
-          item: item.name,
-          status: item.checked ? "checked" : "unchecked",
-          notes: item.notes || "-",
-        }));
-        addTable(headers, rows, { rowHeight: 30 });
-      });
-
-      // === Tambahkan overall notes di bawah semua tabel UAV ===
-      const notesArr = outModalData.equipmentChecklists
-        .map((eq) => eq.notes)
-        .filter(Boolean);
-
-      const overallNotes = notesArr.length > 0 ? notesArr[0] : "-";
-
-      const overallNotesHeaders = [
-        { text: "Overall Notes", key: "overallNotes", width: 600 },
-      ];
-      const overallNotesRows = [{ overallNotes }];
-      addTable(overallNotesHeaders, overallNotesRows, { rowHeight: 30 });
-    }
+        const overallNotesRows = [{ overallNotes }];
+        addTable(overallNotesHeaders, overallNotesRows, { rowHeight: 30 });
+      }
 
       // 2. Payload Data
       if (outPayloadData.length > 0) {
@@ -420,9 +428,7 @@ if (sortOrder !== "default") {
         });
 
         // === Tambahkan overall notes di bawah semua tabel Payload ===
-        const notesArr = outPayloadData
-          .map((p) => p.notes)
-          .filter(Boolean);
+        const notesArr = outPayloadData.map((p) => p.notes).filter(Boolean);
 
         const overallNotes = notesArr.length > 0 ? notesArr[0] : "-";
 
@@ -432,44 +438,42 @@ if (sortOrder !== "default") {
         const overallNotesRows = [{ overallNotes }];
         addTable(overallNotesHeaders, overallNotesRows, { rowHeight: 30 });
       }
-          // 3. GPS Data
-    if (outGpsData.length > 0) {
-      addSectionHeader("GPS Checklist");
+      // 3. GPS Data
+      if (outGpsData.length > 0) {
+        addSectionHeader("GPS Checklist");
 
-      // Render semua tabel GPS
-      outGpsData.forEach((gps, gpsIndex) => {
-        addNewPageIfNeeded(50);
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont(undefined, "bold");
-        doc.text(`${gps.gpsName} - ${gps.timestamp}`, margin, yPosition);
-        yPosition += 25;
-        const headers = [
-          { text: "Item", key: "item", width: 350 },
-          { text: "Status", key: "status", width: 80 },
-          { text: "Notes", key: "notes", width: 150 },
+        // Render semua tabel GPS
+        outGpsData.forEach((gps, gpsIndex) => {
+          addNewPageIfNeeded(50);
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, "bold");
+          doc.text(`${gps.gpsName} - ${gps.timestamp}`, margin, yPosition);
+          yPosition += 25;
+          const headers = [
+            { text: "Item", key: "item", width: 350 },
+            { text: "Status", key: "status", width: 80 },
+            { text: "Notes", key: "notes", width: 150 },
+          ];
+          const rows = gps.items.map((item) => ({
+            item: item.name,
+            status: item.checked ? "checked" : "unchecked",
+            notes: item.notes || "-",
+          }));
+          addTable(headers, rows);
+        });
+
+        // === Tambahkan overall notes di bawah semua tabel GPS ===
+        const notesArr = outGpsData.map((g) => g.notes).filter(Boolean);
+
+        const overallNotes = notesArr.length > 0 ? notesArr[0] : "-";
+
+        const overallNotesHeaders = [
+          { text: "Overall Notes", key: "overallNotes", width: 600 },
         ];
-        const rows = gps.items.map((item) => ({
-          item: item.name,
-          status: item.checked ? "checked" : "unchecked",
-          notes: item.notes || "-",
-        }));
-        addTable(headers, rows);
-      });
-
-      // === Tambahkan overall notes di bawah semua tabel GPS ===
-      const notesArr = outGpsData
-        .map((g) => g.notes)
-        .filter(Boolean);
-
-      const overallNotes = notesArr.length > 0 ? notesArr[0] : "-";
-
-      const overallNotesHeaders = [
-        { text: "Overall Notes", key: "overallNotes", width: 600 },
-      ];
-      const overallNotesRows = [{ overallNotes }];
-      addTable(overallNotesHeaders, overallNotesRows, { rowHeight: 30 });
-    }
+        const overallNotesRows = [{ overallNotes }];
+        addTable(overallNotesHeaders, overallNotesRows, { rowHeight: 30 });
+      }
 
       // 4. PPE Data
       if (outPpeData.length > 0) {
@@ -497,9 +501,7 @@ if (sortOrder !== "default") {
         });
 
         // === Tambahkan overall notes di bawah semua tabel PPE ===
-        const notesArr = outPpeData
-          .map((p) => p.notes)
-          .filter(Boolean);
+        const notesArr = outPpeData.map((p) => p.notes).filter(Boolean);
 
         const overallNotes = notesArr.length > 0 ? notesArr[0] : "-";
 
@@ -510,7 +512,7 @@ if (sortOrder !== "default") {
         addTable(overallNotesHeaders, overallNotesRows, { rowHeight: 30 });
       }
 
-            // 5. Other Equipment Data
+      // 5. Other Equipment Data
       if (Object.keys(outOtherData).length > 0) {
         addSectionHeader("Other Equipment Checklist");
 
@@ -521,7 +523,9 @@ if (sortOrder !== "default") {
           doc.setTextColor(0, 0, 0);
           doc.setFont(undefined, "bold");
           doc.text(
-            `${equipmentName} - ${new Date(items[0].timestamp).toLocaleString()}`,
+            `${equipmentName} - ${new Date(
+              items[0].timestamp
+            ).toLocaleString()}`,
             margin,
             yPosition
           );
@@ -814,8 +818,8 @@ if (sortOrder !== "default") {
       // Function to add images with proper handling
       // Modifikasi di addImages
       const addImages = async (imageUrls) => {
-        const maxImageWidth = 180; // Lebar maksimum
-        const imageHeight = 120; // Tinggi tetap
+        const maxImageWidth = 180;
+        const imageHeight = 180;
         const imagesPerRow = Math.min(
           2,
           Math.floor(contentWidth / (maxImageWidth + 20))
@@ -826,51 +830,34 @@ if (sortOrder !== "default") {
             addNewPageIfNeeded(imageHeight + 80);
             yPosition = i === 0 ? yPosition : margin + 20;
           }
-
           try {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.src = imageUrls[i];
+            // Ambil file gambar dari URL (atau File dari input)
+            const response = await fetch(imageUrls[i]);
+            const blob = await response.blob();
 
             await new Promise((resolve) => {
-              img.onload = resolve;
-              img.onerror = resolve;
-            });
-
-            if (img.complete && img.naturalWidth !== 0) {
-              // Hitung aspect ratio yang benar
-              const aspectRatio = img.naturalWidth / img.naturalHeight;
-              let renderWidth = maxImageWidth;
-              let renderHeight = imageHeight;
-
-              // Sesuaikan ukuran tetap mempertahankan aspect ratio
-              if (aspectRatio > 1) {
-                renderHeight = maxImageWidth / aspectRatio;
-              } else {
-                renderWidth = imageHeight * aspectRatio;
-              }
-
-              const xPos = margin + (i % imagesPerRow) * (maxImageWidth + 30);
-
-              doc.addImage(
-                img,
-                "JPEG",
-                xPos,
-                yPosition,
-                renderWidth,
-                renderHeight,
-                undefined,
-                "FAST"
+              loadImage(
+                blob,
+                function (canvas) {
+                  const imgData = canvas.toDataURL("image/jpeg");
+                  // Tambahkan ke PDF dengan orientasi yang sudah benar
+                  doc.addImage(
+                    imgData,
+                    "JPEG",
+                    margin + (i % imagesPerRow) * (maxImageWidth + 30),
+                    yPosition,
+                    maxImageWidth,
+                    imageHeight
+                  );
+                  resolve();
+                },
+                { orientation: true, canvas: true }
               );
-
-              // ... kode tambahan untuk label
-            }
+            });
           } catch (error) {
             console.error("Error adding image:", error);
-            // ... fallback code
           }
         }
-
         if (imageUrls.length > 0) {
           yPosition += imageHeight + 50;
         }
@@ -1131,34 +1118,34 @@ if (sortOrder !== "default") {
 
         // Prepare final data with checklist status and timestamps
         const processedData = projects.map((code, index) => {
-  // Find checklist out data for this project
-  const outChecklist = outChecklists.find(
-    (item) => item.project_code === code
-  );
-  const hasOutChecklist = !!outChecklist;
-  const outTimestamp = outChecklist?.timestamp
-    ? formatDate(outChecklist.timestamp)
-    : "-";
+          // Find checklist out data for this project
+          const outChecklist = outChecklists.find(
+            (item) => item.project_code === code
+          );
+          const hasOutChecklist = !!outChecklist;
+          const outTimestamp = outChecklist?.timestamp
+            ? formatDate(outChecklist.timestamp)
+            : "-";
 
-  // Find checklist in data for this project
-  const inChecklist = inChecklists.find(
-    (item) => item.project_code === code
-  );
-  const hasInChecklist = !!inChecklist;
-  const inTimestamp = inChecklist?.timestamp
-    ? formatDate(inChecklist.timestamp)
-    : "-";
+          // Find checklist in data for this project
+          const inChecklist = inChecklists.find(
+            (item) => item.project_code === code
+          );
+          const hasInChecklist = !!inChecklist;
+          const inTimestamp = inChecklist?.timestamp
+            ? formatDate(inChecklist.timestamp)
+            : "-";
 
-  return {
-    id: index + 1,
-    code,
-    hasOutChecklist,
-    outTimestamp,
-    hasInChecklist,
-    inTimestamp,
-    inChecklistData: inChecklist,
-  };
-});
+          return {
+            id: index + 1,
+            code,
+            hasOutChecklist,
+            outTimestamp,
+            hasInChecklist,
+            inTimestamp,
+            inChecklistData: inChecklist,
+          };
+        });
 
         setProjectData(processedData);
         setFilteredData(processedData);
@@ -1305,7 +1292,7 @@ if (sortOrder !== "default") {
         }
         equipmentChecklists.push({
           equipmentType,
-         timestamp: formatDate(checklist.timestamp),
+          timestamp: formatDate(checklist.timestamp),
           items: itemsToDisplay,
           notes: checklist.notes || "",
         });
@@ -1566,7 +1553,7 @@ if (sortOrder !== "default") {
 
         equipmentChecklists.push({
           equipmentType,
-         timestamp: formatDate(checklist.timestamp),
+          timestamp: formatDate(checklist.timestamp),
           items: itemsToDisplay,
         });
       }
@@ -2552,309 +2539,428 @@ if (sortOrder !== "default") {
                   ) : (
                     <>
                       {/* UAV Page */}
-                      {currentOutModalPage === 1 && outModalData?.equipmentChecklists && (
-  <>
-    {outModalData.equipmentChecklists.map((equipment, eqIndex) => (
-      <div key={`equipment-out-${eqIndex}`} className="mb-4">
-        <h5 className="mb-3">
-          {equipment.equipmentType}
-          <small className="text-muted ms-2">{equipment.timestamp}</small>
-        </h5>
-        <div className="table-responsive">
-          <table className="table table-bordered table-sm">
-            <thead className="table-light">
-              <tr>
-                <th style={{ width: "18%" }}>Category</th>
-                <th style={{ width: "40%" }}>Item</th>
-                <th style={{ width: "20%" }} className="text-center">Status</th>
-                <th style={{ width: "22%" }} className="text-center">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {equipment.items.map((item, index) => (
-                <tr key={`${item.key}-${index}`}>
-                  <td>{item.category}</td>
-                  <td>{item.name}</td>
-                  <td className="text-center">
-                    {item.checked ? (
-                      <i className="bi bi-check-circle-fill text-success" title="Checked"></i>
-                    ) : (
-                      <i className="bi bi-x-circle-fill text-danger" title="Not Checked"></i>
-                    )}
-                  </td>
-                  <td className="text-center">{item.notes || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ))}
-    {/* Overall Notes hanya satu kali */}
-    <table className="table table-bordered mt-4" style={{ maxWidth: 500 }}>
-      <thead className="table-light">
-        <tr>
-          <th className="text-center">Overall Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="text-center">
-            {
-              (() => {
-                const notesArr = outModalData.equipmentChecklists
-                  .map((eq) => eq.notes)
-                  .filter(Boolean);
-                return notesArr.length > 0 ? notesArr[0] : "-";
-              })()
-            }
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </>
-)}
+                      {currentOutModalPage === 1 &&
+                        outModalData?.equipmentChecklists && (
+                          <>
+                            {outModalData.equipmentChecklists.map(
+                              (equipment, eqIndex) => (
+                                <div
+                                  key={`equipment-out-${eqIndex}`}
+                                  className="mb-4"
+                                >
+                                  <h5 className="mb-3">
+                                    {equipment.equipmentType}
+                                    <small className="text-muted ms-2">
+                                      {equipment.timestamp}
+                                    </small>
+                                  </h5>
+                                  <div className="table-responsive">
+                                    <table className="table table-bordered table-sm">
+                                      <thead className="table-light">
+                                        <tr>
+                                          <th style={{ width: "18%" }}>
+                                            Category
+                                          </th>
+                                          <th style={{ width: "40%" }}>Item</th>
+                                          <th
+                                            style={{ width: "20%" }}
+                                            className="text-center"
+                                          >
+                                            Status
+                                          </th>
+                                          <th
+                                            style={{ width: "22%" }}
+                                            className="text-center"
+                                          >
+                                            Notes
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {equipment.items.map((item, index) => (
+                                          <tr key={`${item.key}-${index}`}>
+                                            <td>{item.category}</td>
+                                            <td>{item.name}</td>
+                                            <td className="text-center">
+                                              {item.checked ? (
+                                                <i
+                                                  className="bi bi-check-circle-fill text-success"
+                                                  title="Checked"
+                                                ></i>
+                                              ) : (
+                                                <i
+                                                  className="bi bi-x-circle-fill text-danger"
+                                                  title="Not Checked"
+                                                ></i>
+                                              )}
+                                            </td>
+                                            <td className="text-center">
+                                              {item.notes || "-"}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            )}
+                            {/* Overall Notes hanya satu kali */}
+                            <table
+                              className="table table-bordered mt-4"
+                              style={{ maxWidth: 500 }}
+                            >
+                              <thead className="table-light">
+                                <tr>
+                                  <th className="text-center">Overall Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td className="text-center">
+                                    {(() => {
+                                      const notesArr =
+                                        outModalData.equipmentChecklists
+                                          .map((eq) => eq.notes)
+                                          .filter(Boolean);
+                                      return notesArr.length > 0
+                                        ? notesArr[0]
+                                        : "-";
+                                    })()}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </>
+                        )}
 
                       {/* Payload Page */}
                       {currentOutModalPage === 2 && outPayloadData && (
-  <>
-    {outPayloadData.map((payload, payloadIndex) => (
-      <div key={`payload-out-${payloadIndex}`} className="mb-4">
-        <h5 className="mb-3">
-          {payload.payloadName}
-          <small className="text-muted ms-2">{payload.timestamp}</small>
-        </h5>
-        <div className="table-responsive">
-          <table className="table table-bordered table-sm">
-            <thead className="table-light">
-              <tr>
-                <th style={{ width: "40%" }}>Item</th>
-                <th style={{ width: "20%" }} className="text-center">Status</th>
-                <th style={{ width: "40%" }} className="text-center">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payload.items.map((item, index) => (
-                <tr key={`${item.key}-${index}`}>
-                  <td>{item.name}</td>
-                  <td className="text-center">
-                    {item.checked ? (
-                      <i className="bi bi-check-circle-fill text-success" title="Checked"></i>
-                    ) : (
-                      <i className="bi bi-x-circle-fill text-danger" title="Not Checked"></i>
-                    )}
-                  </td>
-                  <td className="text-center">{item.notes || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ))}
-    <table className="table table-bordered mt-4" style={{ maxWidth: 500 }}>
-      <thead className="table-light">
-        <tr>
-          <th className="text-center">Overall Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="text-center">
-            {
-              (() => {
-                const notesArr = outPayloadData
-                  .map((p) => p.notes)
-                  .filter(Boolean);
-                return notesArr.length > 0 ? notesArr[0] : "-";
-              })()
-            }
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </>
-)}
+                        <>
+                          {outPayloadData.map((payload, payloadIndex) => (
+                            <div
+                              key={`payload-out-${payloadIndex}`}
+                              className="mb-4"
+                            >
+                              <h5 className="mb-3">
+                                {payload.payloadName}
+                                <small className="text-muted ms-2">
+                                  {payload.timestamp}
+                                </small>
+                              </h5>
+                              <div className="table-responsive">
+                                <table className="table table-bordered table-sm">
+                                  <thead className="table-light">
+                                    <tr>
+                                      <th style={{ width: "40%" }}>Item</th>
+                                      <th
+                                        style={{ width: "20%" }}
+                                        className="text-center"
+                                      >
+                                        Status
+                                      </th>
+                                      <th
+                                        style={{ width: "40%" }}
+                                        className="text-center"
+                                      >
+                                        Notes
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {payload.items.map((item, index) => (
+                                      <tr key={`${item.key}-${index}`}>
+                                        <td>{item.name}</td>
+                                        <td className="text-center">
+                                          {item.checked ? (
+                                            <i
+                                              className="bi bi-check-circle-fill text-success"
+                                              title="Checked"
+                                            ></i>
+                                          ) : (
+                                            <i
+                                              className="bi bi-x-circle-fill text-danger"
+                                              title="Not Checked"
+                                            ></i>
+                                          )}
+                                        </td>
+                                        <td className="text-center">
+                                          {item.notes || "-"}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ))}
+                          <table
+                            className="table table-bordered mt-4"
+                            style={{ maxWidth: 500 }}
+                          >
+                            <thead className="table-light">
+                              <tr>
+                                <th className="text-center">Overall Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="text-center">
+                                  {(() => {
+                                    const notesArr = outPayloadData
+                                      .map((p) => p.notes)
+                                      .filter(Boolean);
+                                    return notesArr.length > 0
+                                      ? notesArr[0]
+                                      : "-";
+                                  })()}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </>
+                      )}
 
                       {/* GPS Page */}
                       {currentOutModalPage === 3 && outGpsData && (
-  <>
-    {outGpsData.map((gps, gpsIndex) => (
-      <div key={`gps-out-${gpsIndex}`} className="mb-4">
-        <h5 className="mb-3">
-          {gps.gpsName}
-          <small className="text-muted ms-2">{gps.timestamp}</small>
-        </h5>
-        <div className="table-responsive">
-          <table className="table table-bordered table-sm">
-            <thead className="table-light">
-              <tr>
-                <th style={{ width: "40%" }}>Item</th>
-                <th style={{ width: "20%" }} className="text-center">Status</th>
-                <th style={{ width: "40%" }} className="text-center">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gps.items.map((item, index) => (
-                <tr key={`${item.key}-${index}`}>
-                  <td>{item.name}</td>
-                  <td className="text-center">
-                    {item.checked ? (
-                      <i className="bi bi-check-circle-fill text-success" title="Checked"></i>
-                    ) : (
-                      <i className="bi bi-x-circle-fill text-danger" title="Not Checked"></i>
-                    )}
-                  </td>
-                  <td className="text-center">{item.notes || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ))}
-    <table className="table table-bordered mt-4" style={{ maxWidth: 500 }}>
-      <thead className="table-light">
-        <tr>
-          <th className="text-center">Overall Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="text-center">
-            {
-              (() => {
-                const notesArr = outGpsData
-                  .map((g) => g.notes)
-                  .filter(Boolean);
-                return notesArr.length > 0 ? notesArr[0] : "-";
-              })()
-            }
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </>
-)}
+                        <>
+                          {outGpsData.map((gps, gpsIndex) => (
+                            <div key={`gps-out-${gpsIndex}`} className="mb-4">
+                              <h5 className="mb-3">
+                                {gps.gpsName}
+                                <small className="text-muted ms-2">
+                                  {gps.timestamp}
+                                </small>
+                              </h5>
+                              <div className="table-responsive">
+                                <table className="table table-bordered table-sm">
+                                  <thead className="table-light">
+                                    <tr>
+                                      <th style={{ width: "40%" }}>Item</th>
+                                      <th
+                                        style={{ width: "20%" }}
+                                        className="text-center"
+                                      >
+                                        Status
+                                      </th>
+                                      <th
+                                        style={{ width: "40%" }}
+                                        className="text-center"
+                                      >
+                                        Notes
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {gps.items.map((item, index) => (
+                                      <tr key={`${item.key}-${index}`}>
+                                        <td>{item.name}</td>
+                                        <td className="text-center">
+                                          {item.checked ? (
+                                            <i
+                                              className="bi bi-check-circle-fill text-success"
+                                              title="Checked"
+                                            ></i>
+                                          ) : (
+                                            <i
+                                              className="bi bi-x-circle-fill text-danger"
+                                              title="Not Checked"
+                                            ></i>
+                                          )}
+                                        </td>
+                                        <td className="text-center">
+                                          {item.notes || "-"}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ))}
+                          <table
+                            className="table table-bordered mt-4"
+                            style={{ maxWidth: 500 }}
+                          >
+                            <thead className="table-light">
+                              <tr>
+                                <th className="text-center">Overall Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="text-center">
+                                  {(() => {
+                                    const notesArr = outGpsData
+                                      .map((g) => g.notes)
+                                      .filter(Boolean);
+                                    return notesArr.length > 0
+                                      ? notesArr[0]
+                                      : "-";
+                                  })()}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </>
+                      )}
 
                       {/* PPE Page */}
                       {currentOutModalPage === 4 && outPpeData && (
-  <>
-    {outPpeData.map((ppe, ppeIndex) => (
-      <div key={`ppe-out-${ppeIndex}`} className="mb-4">
-        <h5 className="mb-3">
-          {ppe.ppeName}
-          <small className="text-muted ms-2">{ppe.timestamp}</small>
-        </h5>
-        <div className="table-responsive">
-          <table className="table table-bordered table-sm">
-            <thead className="table-light">
-              <tr>
-                <th style={{ width: "40%" }}>PPE Name</th>
-                <th style={{ width: "20%" }} className="text-center">Status</th>
-                <th style={{ width: "40%" }} className="text-center">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ppe.items.map((item, index) => (
-                <tr key={`${item.key}-${index}`}>
-                  <td>{item.name}</td>
-                  <td className="text-center">
-                    {item.checked ? (
-                      <i className="bi bi-check-circle-fill text-success" title="Checked"></i>
-                    ) : (
-                      <i className="bi bi-x-circle-fill text-danger" title="Not Checked"></i>
-                    )}
-                  </td>
-                  <td className="text-center">{item.notes || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ))}
-    <table className="table table-bordered mt-4" style={{ maxWidth: 500 }}>
-      <thead className="table-light">
-        <tr>
-          <th className="text-center">Overall Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="text-center">
-            {
-              (() => {
-                const notesArr = outPpeData
-                  .map((p) => p.notes)
-                  .filter(Boolean);
-                return notesArr.length > 0 ? notesArr[0] : "-";
-              })()
-            }
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </>
-)}
+                        <>
+                          {outPpeData.map((ppe, ppeIndex) => (
+                            <div key={`ppe-out-${ppeIndex}`} className="mb-4">
+                              <h5 className="mb-3">
+                                {ppe.ppeName}
+                                <small className="text-muted ms-2">
+                                  {ppe.timestamp}
+                                </small>
+                              </h5>
+                              <div className="table-responsive">
+                                <table className="table table-bordered table-sm">
+                                  <thead className="table-light">
+                                    <tr>
+                                      <th style={{ width: "40%" }}>PPE Name</th>
+                                      <th
+                                        style={{ width: "20%" }}
+                                        className="text-center"
+                                      >
+                                        Status
+                                      </th>
+                                      <th
+                                        style={{ width: "40%" }}
+                                        className="text-center"
+                                      >
+                                        Notes
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {ppe.items.map((item, index) => (
+                                      <tr key={`${item.key}-${index}`}>
+                                        <td>{item.name}</td>
+                                        <td className="text-center">
+                                          {item.checked ? (
+                                            <i
+                                              className="bi bi-check-circle-fill text-success"
+                                              title="Checked"
+                                            ></i>
+                                          ) : (
+                                            <i
+                                              className="bi bi-x-circle-fill text-danger"
+                                              title="Not Checked"
+                                            ></i>
+                                          )}
+                                        </td>
+                                        <td className="text-center">
+                                          {item.notes || "-"}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ))}
+                          <table
+                            className="table table-bordered mt-4"
+                            style={{ maxWidth: 500 }}
+                          >
+                            <thead className="table-light">
+                              <tr>
+                                <th className="text-center">Overall Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="text-center">
+                                  {(() => {
+                                    const notesArr = outPpeData
+                                      .map((p) => p.notes)
+                                      .filter(Boolean);
+                                    return notesArr.length > 0
+                                      ? notesArr[0]
+                                      : "-";
+                                  })()}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </>
+                      )}
 
                       {/* Other Page */}
                       {currentOutModalPage === 5 && outOtherData && (
-  <>
-    {Object.entries(outOtherData).map(([equipmentName, items]) => (
-      <div key={equipmentName} className="mb-4">
-        <h5 className="mb-3">{equipmentName}</h5>
-        <div className="table-responsive">
-          <table className="table table-bordered table-sm">
-            <thead className="table-light">
-              <tr>
-                <th>Equipment ID</th>
-                <th>Status</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, idx) => (
-                <tr key={idx}>
-                  <td>{item.equipment_id}</td>
-                  <td className="text-center">
-                    {item.item_1 === "true" ? (
-                      <i className="bi bi-check-circle-fill text-success" title="Checked"></i>
-                    ) : (
-                      <i className="bi bi-x-circle-fill text-danger" title="Not Checked"></i>
-                    )}
-                  </td>
-                  <td className="text-center">{item.item_notes || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    ))}
-    <table className="table table-bordered mt-4" style={{ maxWidth: 500 }}>
-      <thead className="table-light">
-        <tr>
-          <th className="text-center">Overall Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="text-center">
-            {
-              (() => {
-                const notesArr = Object.values(outOtherData)
-                  .flatMap((items) => items.map((item) => item.notes))
-                  .filter(Boolean);
-                return notesArr.length > 0 ? notesArr[0] : "-";
-              })()
-            }
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </>
-)}
+                        <>
+                          {Object.entries(outOtherData).map(
+                            ([equipmentName, items]) => (
+                              <div key={equipmentName} className="mb-4">
+                                <h5 className="mb-3">{equipmentName}</h5>
+                                <div className="table-responsive">
+                                  <table className="table table-bordered table-sm">
+                                    <thead className="table-light">
+                                      <tr>
+                                        <th>Equipment ID</th>
+                                        <th>Status</th>
+                                        <th>Notes</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {items.map((item, idx) => (
+                                        <tr key={idx}>
+                                          <td>{item.equipment_id}</td>
+                                          <td className="text-center">
+                                            {item.item_1 === "true" ? (
+                                              <i
+                                                className="bi bi-check-circle-fill text-success"
+                                                title="Checked"
+                                              ></i>
+                                            ) : (
+                                              <i
+                                                className="bi bi-x-circle-fill text-danger"
+                                                title="Not Checked"
+                                              ></i>
+                                            )}
+                                          </td>
+                                          <td className="text-center">
+                                            {item.item_notes || "-"}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )
+                          )}
+                          <table
+                            className="table table-bordered mt-4"
+                            style={{ maxWidth: 500 }}
+                          >
+                            <thead className="table-light">
+                              <tr>
+                                <th className="text-center">Overall Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="text-center">
+                                  {(() => {
+                                    const notesArr = Object.values(outOtherData)
+                                      .flatMap((items) =>
+                                        items.map((item) => item.notes)
+                                      )
+                                      .filter(Boolean);
+                                    return notesArr.length > 0
+                                      ? notesArr[0]
+                                      : "-";
+                                  })()}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </>
+                      )}
 
                       {/* Handover Page */}
                       {currentOutModalPage === 6 && (
@@ -3136,3 +3242,4 @@ if (sortOrder !== "default") {
 }
 
 export default Checklistdb;
+
