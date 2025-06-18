@@ -1234,69 +1234,118 @@ function Checklistdb() {
       const projectChecklists = allOutChecklists.filter(
         (item) => item.project_code === project.code
       );
-      const equipmentChecklists = [];
-      for (const checklist of projectChecklists) {
-        const equipmentType = checklist.equipment_uav;
-        const equipmentNames = checklistNamesData.find(
-          (item) => item.equipment_uav === equipmentType
-        );
-        if (!equipmentNames) continue;
-        const itemsToDisplay = [];
-        for (let i = 1; i <= 20; i++) {
-          const itemKey = `uav_${i}`;
-          if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
-            itemsToDisplay.push({
-              category: "UAV",
-              name: equipmentNames[itemKey],
-              checked: checklist[itemKey] === "true",
-              key: itemKey,
-              notes: checklist[`${itemKey}_notes`] || "",
-            });
-          }
-        }
-        for (let i = 1; i <= 10; i++) {
-          const itemKey = `power_system_${i}`;
-          if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
-            itemsToDisplay.push({
-              category: "Power System",
-              name: equipmentNames[itemKey],
-              checked: checklist[itemKey] === "true",
-              key: itemKey,
-              notes: checklist[`${itemKey}_notes`] || "",
-            });
-          }
-        }
-        for (let i = 1; i <= 10; i++) {
-          const itemKey = `gcs_${i}`;
-          if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
-            itemsToDisplay.push({
-              category: "GCS",
-              name: equipmentNames[itemKey],
-              checked: checklist[itemKey] === "true",
-              key: itemKey,
-              notes: checklist[`${itemKey}_notes`] || "",
-            });
-          }
-        }
-        for (let i = 1; i <= 10; i++) {
-          const itemKey = `standard_acc_${i}`;
-          if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
-            itemsToDisplay.push({
-              category: "Standard Accessories",
-              name: equipmentNames[itemKey],
-              checked: checklist[itemKey] === "true",
-              key: itemKey,
-              notes: checklist[`${itemKey}_notes`] || "",
-            });
-          }
-        }
-        equipmentChecklists.push({
-          equipmentType,
-          timestamp: formatDate(checklist.timestamp),
-          items: itemsToDisplay,
-          notes: checklist.notes || "",
+     // const equipmentChecklists = [];
+      // for (const checklist of projectChecklists) {
+      //   const equipmentType = checklist.equipment_uav;
+      //   const equipmentNames = checklistNamesData.find(
+      //     (item) => item.equipment_uav === equipmentType
+      //   );
+      //   if (!equipmentNames) continue;
+      //   const itemsToDisplay = [];
+      //   for (let i = 1; i <= 20; i++) {
+      //     const itemKey = `uav_${i}`;
+      //     if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
+      //       itemsToDisplay.push({
+      //         category: "UAV",
+      //         name: equipmentNames[itemKey],
+      //         checked: checklist[itemKey] === "true",
+      //         key: itemKey,
+      //         notes: checklist[`${itemKey}_notes`] || "",
+      //       });
+      //     }
+      //   }
+      //   for (let i = 1; i <= 10; i++) {
+      //     const itemKey = `power_system_${i}`;
+      //     if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
+      //       itemsToDisplay.push({
+      //         category: "Power System",
+      //         name: equipmentNames[itemKey],
+      //         checked: checklist[itemKey] === "true",
+      //         key: itemKey,
+      //         notes: checklist[`${itemKey}_notes`] || "",
+      //       });
+      //     }
+      //   }
+      //   for (let i = 1; i <= 10; i++) {
+      //     const itemKey = `gcs_${i}`;
+      //     if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
+      //       itemsToDisplay.push({
+      //         category: "GCS",
+      //         name: equipmentNames[itemKey],
+      //         checked: checklist[itemKey] === "true",
+      //         key: itemKey,
+      //         notes: checklist[`${itemKey}_notes`] || "",
+      //       });
+      //     }
+      //   }
+      //   for (let i = 1; i <= 10; i++) {
+      //     const itemKey = `standard_acc_${i}`;
+      //     if (equipmentNames[itemKey] && checklist[itemKey] !== null) {
+      //       itemsToDisplay.push({
+      //         category: "Standard Accessories",
+      //         name: equipmentNames[itemKey],
+      //         checked: checklist[itemKey] === "true",
+      //         key: itemKey,
+      //         notes: checklist[`${itemKey}_notes`] || "",
+      //       });
+      //     }
+      //   }
+      //   equipmentChecklists.push({
+      //     equipmentType,
+      //     timestamp: formatDate(checklist.timestamp),
+      //     items: itemsToDisplay,
+      //     notes: checklist.notes || "",
+      //   });
+      // }
+
+     const normalizeKey = (key) =>
+  key
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+const equipmentChecklists = [];
+
+for (const checklist of projectChecklists) {
+  const equipmentType = checklist.equipment_uav;
+  // Cari data checklistName yang sudah dinormalisasi
+  const equipmentNames = checklistNamesData.find(
+    (item) => normalizeKey(item.equipment_uav) === normalizeKey(equipmentType)
+  );
+  if (!equipmentNames) continue;
+
+  const itemsToDisplay = [];
+  const sections = [
+    { prefix: "uav_", category: "UAV", max: 20 },
+    { prefix: "power_system_", category: "Power System", max: 8 },
+    { prefix: "gcs_", category: "GCS", max: 4 },
+    { prefix: "standard_acc_", category: "Standard Accessories", max: 8 },
+  ];
+
+  sections.forEach(({ prefix, category, max }) => {
+    for (let i = 1; i <= max; i++) {
+      const itemKey = `${prefix}${i}`;
+      const itemName = equipmentNames[itemKey];
+      if (itemName) {
+        itemsToDisplay.push({
+          category,
+          name: itemName,
+          checked: checklist[itemKey] === true || checklist[itemKey] === "true",
+          key: itemKey,
+          notes: checklist[`${itemKey}_notes`] || "",
         });
       }
+    }
+  });
+
+  equipmentChecklists.push({
+    equipmentType,
+    timestamp: checklist.timestamp ? formatDate(checklist.timestamp) : "",
+    items: itemsToDisplay,
+    notes: checklist.notes || "",
+  });
+}
 
       // Payload
       const projectPayloads = payloadChecklists.filter(
@@ -3242,4 +3291,3 @@ function Checklistdb() {
 }
 
 export default Checklistdb;
-
