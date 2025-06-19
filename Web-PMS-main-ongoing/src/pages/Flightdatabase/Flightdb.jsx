@@ -15,7 +15,7 @@ function Checklistdb() {
   const [modalData, setModalData] = useState(null);
   const [checklistItems, setChecklistItems] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
-  const name = localStorage.getItem("name");
+  const email = localStorage.getItem("email");
   const itemsPerPage = 15;
   // state for current modal page
   const [currentModalPage, setCurrentModalPage] = useState(1);
@@ -1072,17 +1072,119 @@ function Checklistdb() {
     }
   };
 
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       setLoading(true);
+
+  //       // Step 1: Check user role
+  //       const usersResponse = await fetch("http://103.163.184.111:3000/users");
+  //       const usersData = await usersResponse.json();
+
+  //       const currentUser = usersData.find((user) => user.name === name);
+  //       console.log("current user: ", currentUser);
+  //       const isAdmin = currentUser?.position === "Admin";
+
+  //       // Step 2: Fetch personnel data
+  //       const personnelResponse = await fetch(
+  //         "http://103.163.184.111:3000/personnel"
+  //       );
+  //       const personnelData = await personnelResponse.json();
+
+  //       // Step 3: Fetch all necessary data in parallel
+  //       const [outChecklists, inChecklists] = await Promise.all([
+  //         fetch("http://103.163.184.111:3000/uav_database").then((res) =>
+  //           res.json()
+  //         ),
+  //         fetch("http://103.163.184.111:3000/uav_database_in").then((res) =>
+  //           res.json()
+  //         ),
+  //       ]);
+
+  //       // Get unique project codes based on role
+  //       let projects = [];
+  //       if (isAdmin) {
+  //         projects = [
+  //           ...new Set(personnelData.map((person) => person.project_code)),
+  //         ];
+  //       } else {
+  //         projects = [
+  //           ...new Set(
+  //             personnelData
+  //               .filter((person) => person.personnel_name === name)
+  //               .map((person) => person.project_code)
+  //           ),
+  //         ];
+  //       }
+
+  //       // Prepare final data with checklist status and timestamps
+  //       const processedData = projects.map((code, index) => {
+  //         // Find checklist out data for this project
+  //         const outChecklist = outChecklists.find(
+  //           (item) => item.project_code === code
+  //         );
+  //         const hasOutChecklist = !!outChecklist;
+  //         const outTimestamp = outChecklist?.timestamp
+  //           ? formatDate(outChecklist.timestamp)
+  //           : "-";
+
+  //         // Find checklist in data for this project
+  //         const inChecklist = inChecklists.find(
+  //           (item) => item.project_code === code
+  //         );
+  //         const hasInChecklist = !!inChecklist;
+  //         const inTimestamp = inChecklist?.timestamp
+  //           ? formatDate(inChecklist.timestamp)
+  //           : "-";
+
+  //         return {
+  //           id: index + 1,
+  //           code,
+  //           hasOutChecklist,
+  //           outTimestamp,
+  //           hasInChecklist,
+  //           inTimestamp,
+  //           inChecklistData: inChecklist,
+  //         };
+  //       });
+
+  //       setProjectData(processedData);
+  //       setFilteredData(processedData);
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (name) {
+  //     fetchData();
+  //   }
+  // }, [name]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Step 1: Check user role
+        // Step 1: Get user data and find matching email to get name
         const usersResponse = await fetch("http://103.163.184.111:3000/users");
         const usersData = await usersResponse.json();
-
-        const currentUser = usersData.find((user) => user.name === name);
-        const isAdmin = currentUser?.position === "Admin";
+        
+        // Find user by email (case-insensitive comparison)
+        const currentUser = usersData.find(user => 
+          user.email.toLowerCase() === email?.toLowerCase()
+        );
+        
+        if (!currentUser) {
+          console.error("No user found with this email");
+          setLoading(false);
+          return;
+        }
+        
+        const userName = currentUser.name;
+        const isAdmin = currentUser.position === "Admin";
+        console.log("Current user:", currentUser);
 
         // Step 2: Fetch personnel data
         const personnelResponse = await fetch(
@@ -1110,7 +1212,9 @@ function Checklistdb() {
           projects = [
             ...new Set(
               personnelData
-                .filter((person) => person.personnel_name === name)
+                .filter((person) => 
+                  person.personnel_name.toLowerCase() === userName.toLowerCase()
+                )
                 .map((person) => person.project_code)
             ),
           ];
@@ -1156,10 +1260,10 @@ function Checklistdb() {
       }
     };
 
-    if (name) {
+    if (email) {  // Changed from name to email
       fetchData();
     }
-  }, [name]);
+  }, [email]); 
 
   // Handle search
   useEffect(() => {
@@ -3291,3 +3395,4 @@ for (const checklist of projectChecklists) {
 }
 
 export default Checklistdb;
+
